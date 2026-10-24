@@ -28,6 +28,7 @@ except FileNotFoundError:
 
 st.title("🍪 Plätzchen-Wahlomat")
 st.write("Finde heraus, welche Plätzchen am besten zu deinen Vorlieben passen!")
+st.write("! Hinweis: 2026-10-24---Es werden ggf. in den nächsten Tagen noch einzelne Plätzchensorten hinzugefügt, bzw. Bewertungen nochmal überarbeitet. Bei Änderungswünschen bitte beim Admin melden")
 
 st.divider()
 
@@ -49,7 +50,7 @@ for i, (kategorie, frage_text) in enumerate(fragen.items()):
 
 st.divider()
 
-# Auswertung mit Kosinus-Ähnlichkeit
+# Auswertung mit beiden Methoden
 if st.button(
     "Sag mir, was ich mir wünsche!",
     type="primary",
@@ -63,10 +64,10 @@ if st.button(
         )
         st.stop()
 
+    vorlieben_series = pd.Series(vorlieben)
+
     # 2. Vorlieben in einen 2D-Vektor umwandeln
-    vorlieben_array = (
-        pd.Series(vorlieben).values.reshape(1, -1)
-    )
+    vorlieben_array = vorlieben_series.values.reshape(1, -1)
 
     # 3. Kosinus-Ähnlichkeit berechnen
     similarities = cosine_similarity(
@@ -74,21 +75,28 @@ if st.button(
         vorlieben_array
     ).flatten()
 
-    # 4. Ergebnisse sortieren
+    # 4. Klassische Normierung berechnen (Prozent der max. möglichen Ja-Wünsche)
+    raw_punkte = platzerl_tabelle.dot(vorlieben_series)
+    max_possible = (vorlieben_series == 1).sum()
+    classic_percent = (raw_punkte / max_possible * 100) if max_possible > 0 else pd.Series(0, index=platzerl_tabelle.index)
+
+    # 5. Ergebnisse nach Kosinus sortieren
     aehnlichkeit = pd.Series(
         similarities,
         index=platzerl_tabelle.index
     ).sort_values(ascending=False)
 
-    # 5. Top 5 anzeigen
+    # 6. Top 8 anzeigen (mit beiden Werten im Metric-Feld)
     st.subheader("Deine Top-Favoriten:")
+    st.text("(Winkel Vektoren (Kosinus) [-100,100]    |    direkte Übereinstimmung) [0,100]")
 
-    top_n = aehnlichkeit.head(5)
+    top_n = aehnlichkeit.head(8)
 
     for rank, (plaetzchen_name, score) in enumerate(
         top_n.items(), start=1
     ):
+        classic_val = classic_percent.get(plaetzchen_name, 0)
         st.metric(
             label=f"Platz {rank}: {plaetzchen_name}",
-            value=f"{score * 100:.1f}"
+            value=f"{score * 100:.1f}%  | {classic_val:.1f}%"
         )
