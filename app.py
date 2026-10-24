@@ -16,12 +16,14 @@ def load_data(file_path: str):
 
     fragen_series = df_raw.iloc[0].astype(str)
     platzerl_tabelle = df_raw.iloc[1:].fillna(0).astype(int)
+    # Nur für den Kosinus eine Version mit -1 statt 0 erstellen:
+    platzerl_tabelle_cosine = platzerl_tabelle.replace(0, -1)
 
-    return platzerl_tabelle, fragen_series.to_dict()
+    return platzerl_tabelle, platzerl_tabelle_cosine, fragen_series.to_dict()
 
 
 try:
-    platzerl_tabelle, fragen = load_data(CSV_PATH)
+    platzerl_tabelle, platzerl_tabelle_cosine, fragen = load_data(CSV_PATH)
 except FileNotFoundError:
     st.error(f"Die Datei `{CSV_PATH}` wurde nicht gefunden. Bitte überprüfe den Pfad.")
     st.stop()
@@ -71,7 +73,7 @@ if st.button(
 
     # 3. Kosinus-Ähnlichkeit berechnen
     similarities = cosine_similarity(
-        platzerl_tabelle,
+        platzerl_tabelle_cosine,
         vorlieben_array
     ).flatten()
 
