@@ -90,5 +90,5 @@ if st.button(
     ):
         st.metric(
             label=f"Platz {rank}: {plaetzchen_name}",
-            value=f"{score * 100:.1f} % Kosinus-Ähnlichkeit"
+            value=f"{score * 100:.1f}"
         )
